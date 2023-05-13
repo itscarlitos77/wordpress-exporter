@@ -1,34 +1,23 @@
-[![Snyk scans](https://github.com/aorfanos/wordpress-exporter/actions/workflows/security-scanning.yaml/badge.svg)](https://github.com/aorfanos/wordpress-exporter/actions/workflows/security-scanning.yaml)
-[![Build and Push Go Code to Github Container Registry](https://github.com/aorfanos/wordpress-exporter/actions/workflows/build.yaml/badge.svg)](https://github.com/aorfanos/wordpress-exporter/actions/workflows/build.yaml)
-# Prometheus WordPress exporter
+# INSTALACIÓN DE WORDPRESS-EXPORTER PARA EXPORTAR MÉTRICAS A PROMETHEUS
+Pequeño fork hecho por Carlos Monge Ponce para el proyecto de fin de grado del IES Calderón de la Barca. Basado en https://github.com/aorfanos/wordpress-exporter
 
-Exposes WordPress site metrics using the WordPress Rest API.
-
-## Installation
-
-- Install the exporter (it doesn't need to be at the same machine as your site, as long as it can reach it by network): 
+# PRIMER PASO
+Clonamos este repositorio a una ubicación, preferiblemente donde se tengan los archivos de docker o docker compose.
 
 ```console
-docker pull ghcr.io/aorfanos/wordpress-exporter/wordpress-exporter
-
-# run plain, without authentication
-docker run -d --publish 11011:11011 \
-  -it ghcr.io/aorfanos/wordpress-exporter/wordpress-exporter:v0.0.8 \
-  -host http://example.com \
-  -auth.basic false
-
-# authenticated to wordpress api (return data from all endpoints)
-docker run -d --publish 11011:11011 \
-  -it ghcr.io/aorfanos/wordpress-exporter/wordpress-exporter:v0.0.8 \
-  -auth.user wordpress-exporter \
-  -auth.pass "Wdnh 7Wm0 UuxW 64DL y2lx r0It" \ # Application password for authenticated use
-  -host http://example.com \
-  -auth.basic true
+git clone https://github.com/itscarlitos77/wordpress-exporter.git
 ```
 
-- Put scrape configuration in your `prometheus.yml`:
-
+# SEGUNDO PASO
+Accededmos al directorio creado, se llamará "wordpress-exporter". Una vez dentro, vamos a crear la imagen del contenedor. Usaremos el siguiente comando:
+```console
+docker built -t <nombre de la imagen> .
 ```
+En nuestro caso lo llamamos wordpress-exporter para mayor comodidad
+
+# TERCER PASO
+Ahora, incluiremos las siguientes lineas de código en nuestro archivo de "prometheus.yml":
+```console
 scrape_configs:
   - job_name: wordpress_exporter
     honor_timestamps: true
@@ -37,37 +26,47 @@ scrape_configs:
     metrics_path: /metrics
     scheme: http
     static_configs:
-      - targets: ["<exporter-IP>:11011"]
+      - targets: ["<IP del exportador>:11011"]
 ```
 
-The outcome will look something like this:
+# CUARTO PASO (ARRANCAR DIRECTAMENTE EL CONTENEDOR)
+Si quieres arrancar directamente el contenedor:
+```console
+docker start <nombre de la imagen>
+```
+# CUARTO PASO (CON ARCHIVO DOCKER-COMPOSE.YML)
+En el archivo de docker-compose.yml, incluiremos la siguientes líneas para incluir la imagen junto con unos parámetros:
+```console  
+  wordpress-exporter:
+    image: wordpress-exporter:latest
+    container_name: wordpress-exporter
+    command: >
+      -auth.user wexporter
+      -auth.pass "wexporter"
+      -host http://wordpress:2000
+      -auth.basic true
+    ports:
+      - 11011:11011
+```
+Ahora solo deberías arrancar el archivo. Para comprobar su funcionamiento, en este cas, introduciremos la ruta "localhost:11011/metrics" en nuestro navegador.
 
-![Grafana WordPress dashboard](https://i.imgur.com/e5A6UnM.png)
+## MÉTRICAS PROPORCIONADAS
 
-### Authenticating to WordPress API
+| Nombre                   |Tipo       | Descripción                 |
+|--------------------------|-----------|-----------------------------|
+| wordpress_post_count     | Indicador |    WordPress posts count    |
+| wordpress_category_count | Indicador |   WordPress category count  |
+| wordpress_tag_count      | Indicador |     WordPress tags count    |
+| wordpress_page_count     | Indicador |    WordPress pages count    |
+| wordpress_comment_count  | Indicador |   WordPress comments count  |
+| wordpress_media_count    | Indicador | WordPress media files count |
+| wordpress_user_count     | Indicador |    WordPress users count    |
+| wordpress_taxonomy_count | Indicador |    WordPress taxonomy count |
+| wordpress_theme_count    | Indicador |    WordPress theme count    |
+| wordpress_plugin_count   | Indicador |    Wordpress plugin count   |
 
-Since version 5.6, WordPress has introduced the ability to use [Application Passwords](https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/#basic-authentication-with-application-passwords) for performing basic authentication. This new feature is now the recommended way to securely access the REST API, making it easier for developers to build applications and services that integrate with WordPress while maintaining a high level of security.
-
-## Metrics
-
-| Metric name              | Type  | Description                 |
-|--------------------------|-------|-----------------------------|
-| wordpress_post_count     | Gauge |    WordPress posts count    |
-| wordpress_category_count | Gauge |   WordPress category count  |
-| wordpress_tag_count      | Gauge |     WordPress tags count    |
-| wordpress_page_count     | Gauge |    WordPress pages count    |
-| wordpress_comment_count  | Gauge |   WordPress comments count  |
-| wordpress_media_count    | Gauge | WordPress media files count |
-| wordpress_user_count     | Gauge |    WordPress users count    |
-| wordpress_taxonomy_count | Gauge |    WordPress taxonomy count |
-| wordpress_theme_count    | Gauge |    WordPress theme count    |
-| wordpress_plugin_count   | Gauge |    Wordpress plugin count   |
-
-## Labels
-
-- `exported_instance`: Site being monitored
-
-## Todo 
-
-- Provide config from file to monitor multiple hosts with one exporter
-- Support native WordPress cookie authentication
+## NOTA
+Puedes modificar la ruta de búsqueda de métricas de wordpress en el archivo que se encuentra en:
+```console
+wordpress-exporter/utils/prometheus.go
+```
