@@ -11,7 +11,7 @@ git clone https://github.com/itscarlitos77/wordpress-exporter.git
 # SEGUNDO PASO
 Accededmos al directorio creado, se llamará "wordpress-exporter". Una vez dentro, vamos a crear la imagen del contenedor. Usaremos el siguiente comando:
 ```console
-docker built -t <nombre de la imagen> .
+docker build -t <nombre de la imagen> .
 ```
 En nuestro caso lo llamamos wordpress-exporter para mayor comodidad
 
